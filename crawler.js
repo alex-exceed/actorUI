@@ -1,13 +1,14 @@
 const Apify = require('apify');
 const fs = require('fs');
+const md5 = require('md5');
 const { sendEmail } = require('./helpers/email_sender');
 const config = require('./config/config.js');
 //set API storage DIR
 process.env.APIFY_LOCAL_STORAGE_DIR = 'apify_storage';
 
-const buildOffersLinks = async (key) => {
+const buildOffersLinks = async (datasetName, key) => {
     const items = [];
-    const requestQueue = await Apify.openRequestQueue();
+    const requestQueue = await Apify.openRequestQueue(datasetName);
     const url = `${config.baseUrl}s?k=${key}&ref=nb_sb_noss`;
 
     await requestQueue.addRequest({ url: url });
@@ -61,7 +62,7 @@ const getResult = async (datasetName, items) => {
     }, []);
 
     if (sources && sources.length) {
-        const requestList = await Apify.openRequestList('offers', sources);
+        const requestList = await Apify.openRequestList('offers-' + datasetName, sources);
 
         const crawler = new Apify.CheerioCrawler({
             requestList,
@@ -95,8 +96,8 @@ const getResult = async (datasetName, items) => {
 
 module.exports.scrape = async (key, emailTo) => {
     console.log(key, emailTo);
-    const items = await buildOffersLinks(key);
-    const datasetName = emailTo + '_' + new Date().getTime();
+    const datasetName = md5(emailTo + '_' + new Date().getTime());
+    const items = await buildOffersLinks(datasetName, key);
     let resFilesLinks = [];
 
     await getResult(datasetName, items);
