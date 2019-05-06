@@ -1,6 +1,6 @@
 const Apify = require('apify');
-const fs = require('fs')
-const {sendEmail} = require('./helpers/email_sender');
+const fs = require('fs');
+const { sendEmail } = require('./helpers/email_sender');
 const config = require('./config/config.js');
 //set API storage DIR
 process.env.APIFY_LOCAL_STORAGE_DIR = 'apify_storage';
@@ -8,13 +8,12 @@ process.env.APIFY_LOCAL_STORAGE_DIR = 'apify_storage';
 const buildOffersLinks = async (key) => {
     const items = [];
     const requestQueue = await Apify.openRequestQueue();
-    const url = `${config.baseUrl}s?k=${ key }&ref=nb_sb_noss`;
+    const url = `${config.baseUrl}s?k=${key}&ref=nb_sb_noss`;
 
     await requestQueue.addRequest({ url: url });
 
     let count = 0;
     const handlePageFunction = async ({ request, $ }) => {
-        const links = $('.s-result-list [data-component-type="s-product-image"] .a-link-normal');
         if (count) {
             items.push({
                 title      : $('#productTitle').text().trim(),
@@ -50,7 +49,7 @@ const buildOffersLinks = async (key) => {
 
     await crawler.run();
 
-    return items
+    return items;
 };
 
 const getResult = async (datasetName, items) => {
@@ -95,7 +94,7 @@ const getResult = async (datasetName, items) => {
 
 
 module.exports.scrape = async (key, emailTo) => {
-    console.log(key, emailTo)
+    console.log(key, emailTo);
     const items = await buildOffersLinks(key);
     const datasetName = emailTo + '_' + new Date().getTime();
     let resFilesLinks = [];
@@ -103,9 +102,9 @@ module.exports.scrape = async (key, emailTo) => {
     await getResult(datasetName, items);
 
     fs.readdirSync('./' + config.baseFilesFolder + datasetName + '/').forEach(file => {
-        resFilesLinks.push(config.baseDomain + config.baseFilesFolder + datasetName + '/' + file)
+        resFilesLinks.push(config.baseDomain + config.baseFilesFolder + datasetName + '/' + file);
     });
 
-    sendEmail(emailTo, 'Crawler Results', resFilesLinks.join('\n'))
+    sendEmail(emailTo, 'Crawler Results', resFilesLinks.join('\n'));
 };
 
