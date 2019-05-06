@@ -2,6 +2,9 @@
 	"name": "actor",
 	"version": "0.0",
 	"buildTag": "latest",
-	"env": null,
+	"env": {
+		"APIFY_PROXY_PASSWORD": "cETJm4xH6hmgnfahD5qYRCqWF",
+		"APIFY_LOCAL_STORAGE_DIR": "apify_storage"
+	},
 	"template": "hello_world"
 }

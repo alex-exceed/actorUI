@@ -1,7 +1,9 @@
 const Apify = require('apify');
 const fs = require('fs')
-const {sendEmail} = require('./email_sender');
-const config = require('../config/config.js');
+const {sendEmail} = require('./helpers/email_sender');
+const config = require('./config/config.js');
+//set API storage DIR
+process.env.APIFY_LOCAL_STORAGE_DIR = 'apify_storage';
 
 const buildOffersLinks = async (key) => {
     const items = [];
@@ -93,6 +95,7 @@ const getResult = async (datasetName, items) => {
 
 
 module.exports.scrape = async (key, emailTo) => {
+    console.log(key, emailTo)
     const items = await buildOffersLinks(key);
     const datasetName = emailTo + '_' + new Date().getTime();
     let resFilesLinks = [];
