@@ -6,6 +6,22 @@ const config = require('./config/config.js');
 //set API storage DIR
 process.env.APIFY_LOCAL_STORAGE_DIR = 'apify_storage';
 
+const generatePaginationLinks = (urls, itemId) => {
+    const paginationUrls = [];
+    let magicNumber = new RegExp('/ref=olp_page_2/(.*)?ie=UTF8').exec(urls[0])[1];
+    const pages = urls.map(url => {
+        return parseInt(new RegExp('ref=olp_page_(.*)/').exec(url)[1], 10);
+    });
+    const maxPage = Math.max(...pages);
+
+    for (let p = 2; p <= maxPage; p++) {
+        const hrf = config.baseOffersLink + itemId + '/ref=olp_page_' + p + '/' + magicNumber + '?ie=UTF8&f_all=true&startIndex=' + ((p - 1) * 10);
+        paginationUrls.push(hrf);
+    }
+
+    return paginationUrls;
+};
+
 const buildOffersLinks = async (datasetName, key) => {
     const items = [];
     const requestQueue = await Apify.openRequestQueue(datasetName);
@@ -54,6 +70,9 @@ const buildOffersLinks = async (datasetName, key) => {
 };
 
 const getResult = async (datasetName, items) => {
+
+    let additionalPages = [];
+
     const sources = items.reduce((acc, item) => {
         const itemId = item.itemUrl.split('/')[5];
         item.id = itemId;
@@ -66,9 +85,55 @@ const getResult = async (datasetName, items) => {
 
         const crawler = new Apify.CheerioCrawler({
             requestList,
+            handlePageTimeoutSecs: 120,
             handlePageFunction: async ({ $, request }) => {
 
-                const item = items.find(i => i.id === request.url.split('/').reverse()[0]);
+                const itemId = new RegExp('offer-listing/(.*)').exec(request.url)[1];
+
+                const item = items.find(i => i.id === itemId);
+
+                const pagesHrefs = [];
+
+                $('#olpOfferList .olpOffer').each((i, el) => {
+                    item.offers.push({
+                        sellerName: $(el).find('.olpSellerName').text().trim(),
+                        offer     : $(el).find('.olpOfferPrice').text().trim(),
+                        shipping  : 'free',
+                    });
+                });
+
+                const pagination = $('.a-pagination li:not(.a-disabled, .a-selected, .a-last)');
+
+                if (pagination && pagination.length) {
+                    pagination.each((idx, el) => {
+                        const href = $(el).find('a').attr('href');
+                        pagesHrefs.push(href);
+                    });
+                }
+
+                if (pagesHrefs && pagesHrefs.length) {
+                    const result = generatePaginationLinks(pagesHrefs, itemId);
+
+                    additionalPages = [...additionalPages, ...result];
+                }
+
+            },
+        });
+
+        await crawler.run();
+
+    }
+
+    if (additionalPages && additionalPages.length) {
+        const requestList = await Apify.openRequestList('pagination-' + datasetName, additionalPages);
+
+        const _crawler = new Apify.CheerioCrawler({
+            requestList,
+            handlePageFunction: async ({ $, request }) => {
+
+                const itemId = new RegExp('offer-listing/(.*)/ref=')[1];
+
+                const item = items.find(i => i.id === itemId);
 
                 $('#olpOfferList .olpOffer').each((i, el) => {
                     item.offers.push({
@@ -80,16 +145,15 @@ const getResult = async (datasetName, items) => {
             },
         });
 
-
-        await crawler.run();
-
-        items.forEach(item => {
-            delete item.id;
-        });
-
-        const dataset = await Apify.openDataset(datasetName);
-        await dataset.pushData(items);
+        await _crawler.run();
     }
+
+    items.forEach(item => {
+        delete item.id;
+    });
+
+    const dataset = await Apify.openDataset(datasetName);
+    await dataset.pushData(items);
 
 };
 
