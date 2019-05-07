@@ -2,7 +2,7 @@
 
 Hi you can check it on remote server.
 If its not responding than it's sleeping.
- 
+Sorry, currently not working. Some issues with AWS data =) working on it.
 http://ec2-3-91-99-130.compute-1.amazonaws.com:3000/
 
 To check on local:
