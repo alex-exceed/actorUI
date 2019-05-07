@@ -5,6 +5,7 @@ const { sendEmail } = require('./helpers/email_sender');
 const config = require('./config/config.js');
 //set API storage DIR
 process.env.APIFY_LOCAL_STORAGE_DIR = 'apify_storage';
+process.env.APIFY_PROXY_PASSWORD = 'cETJm4xH6hmgnfahD5qYRCqWF';
 
 const generatePaginationLinks = (urls, itemId) => {
     const paginationUrls = [];
