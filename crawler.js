@@ -86,6 +86,8 @@ const getResult = async (datasetName, items) => {
         const crawler = new Apify.CheerioCrawler({
             requestList,
             handlePageTimeoutSecs: 120,
+            useApifyProxy: true,
+            apifyProxyGroups: ['SHADER'],
             handlePageFunction: async ({ $, request }) => {
 
                 const itemId = new RegExp('offer-listing/(.*)').exec(request.url)[1];
@@ -129,6 +131,9 @@ const getResult = async (datasetName, items) => {
 
         const _crawler = new Apify.CheerioCrawler({
             requestList,
+            useApifyProxy: true,
+            apifyProxyGroups: ['SHADER'],
+            handlePageTimeoutSecs: 120,
             handlePageFunction: async ({ $, request }) => {
 
                 const itemId = new RegExp('offer-listing/(.*)/ref=')[1];
